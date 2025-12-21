@@ -1,15 +1,15 @@
 # 나의 첫번째 연습장
 
-This is my exercise book for learning HTML/CSS.
-I'm a beginner, so the code may be simple.  
-Because I'm still in middle school...
+이건 제가 HTML/CSS를 배우려고 쓰는 연습장이에요. 
+아직 초보라서 코드가 간단할 수도 있어요.
+제가 아직 중학생이거든요.
 
 ## 무엇을 올리나요?
 
-1. 개인 작업물
-2. 배운 간단한 코드들
+1. 개인 작업물.
+2. 배운 간단한 코드들.
 
 ### 지금까지 한 것
 
-1.첫 배포 버전
-2. 네이버 카페 요청 기능 구현
+1.첫 배포 버전.
+2. 네이버 카페 요청 기능 구현.
