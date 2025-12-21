@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>하로하 합치기</title>
+<style>
+  body { margin:0; padding:0; font-family: Arial, sans-serif; text-align: center; background:#f2f2f2; }
+  #controls { margin-bottom:10px; }
+  button { padding:8px 14px; margin:2px; cursor:pointer; }
+  #speedText { font-weight:bold; margin-left:10px; }
+  #gameArea { width:1200px; height:800px; margin:0 auto 20px; border:2px solid #333; background:white; position:relative; overflow:hidden; }
+  .haroha { position:absolute; border-radius:50%; background-repeat:no-repeat; background-position:center; background-size:contain; user-select:none; transition: width 0.3s, height 0.3s, left 0.3s, top 0.3s; }
+</style>
+</head>
+<body>
+
+<h2>하로하 합치기</h2>
+<div id="controls">
+  <button onclick="spawnHaroha()">하로하 생성</button>
+  <button onclick="resetGame()">리셋</button>
+  <button onclick="speedDown()">속도 -</button>
+  <button onclick="speedUp()">속도 +</button>
+  <span id="speedText">속도: 1.0</span>
+</div>
+<div id="gameArea"></div>
+
+<script>
+const AREA_WIDTH = 1200;
+const AREA_HEIGHT = 800;
+const baseSize = 80;
+const MAX_SPEED = 10;
+const MIN_SPEED = 0.2;
+let speedMultiplier = 1.0;
+
+const gameArea = document.getElementById("gameArea");
+const speedText = document.getElementById("speedText");
+const harohas = [];
+
+// ================= 하로하 생성 =================
+function spawnHaroha(size=1, x=null, y=null){
+    const h=document.createElement("div");
+    h.className="haroha";
+    h.dataset.size=size;
+    const pixelSize=baseSize*size;
+    h.style.width=pixelSize+"px";
+    h.style.height=pixelSize+"px";
+
+    // 이미지
+    if(size===1) h.style.backgroundImage='url("assets/tmp/haroha1.webp")';
+    else if(size===2) h.style.backgroundImage='url("assets/res/haroha2.webp")';
+    else if(size===3) h.style.backgroundImage='url("assets/bin/haroha3.webp")';
+    else h.style.backgroundImage='url("assets/date/haroha4.png")';
+
+    // 중심점 랜덤 위치 (끝에 안 닿도록)
+    const radius=Math.random()*50+30; // 원형 이동 반지름
+    h.cx=x ?? Math.random()*(AREA_WIDTH-2*radius- pixelSize)+radius;
+    h.cy=y ?? Math.random()*(AREA_HEIGHT-2*radius- pixelSize)+radius;
+    h.radius=radius;
+    h.angle=Math.random()*Math.PI*2;
+    h.angleSpeed=(Math.random()*0.05+0.01)*(Math.random()<0.5?-1:1);
+
+    // 중심점 이동 속도
+    h.vx=(Math.random()*1.5+0.5)*(Math.random()<0.5?-1:1);
+    h.vy=(Math.random()*1.5+0.5)*(Math.random()<0.5?-1:1);
+
+    h.style.left=(h.cx+Math.cos(h.angle)*h.radius - pixelSize/2)+"px";
+    h.style.top=(h.cy+Math.sin(h.angle)*h.radius - pixelSize/2)+"px";
+
+    gameArea.appendChild(h);
+    harohas.push(h);
+}
+
+// ================= 프레임 업데이트 =================
+function update(){
+    for(let h of harohas){
+        // 중심점 이동
+        h.cx+=h.vx*speedMultiplier;
+        h.cy+=h.vy*speedMultiplier;
+
+        // 화면 경계에서 반사 (중심점 기준)
+        if(h.cx-h.radius<0) h.vx=Math.abs(h.vx);
+        if(h.cx+h.radius>AREA_WIDTH) h.vx=-Math.abs(h.vx);
+        if(h.cy-h.radius<0) h.vy=Math.abs(h.vy);
+        if(h.cy+h.radius>AREA_HEIGHT) h.vy=-Math.abs(h.vy);
+
+        // 원형 곡선 이동
+        h.angle+=h.angleSpeed;
+        h.x=h.cx+Math.cos(h.angle)*h.radius - h.offsetWidth/2;
+        h.y=h.cy+Math.sin(h.angle)*h.radius - h.offsetHeight/2;
+
+        h.style.left=h.x+"px";
+        h.style.top=h.y+"px";
+    }
+
+    checkAllMerges();
+    requestAnimationFrame(update);
+}
+
+// ================= 합치기 검사 =================
+function checkAllMerges(){
+    for(let i=0;i<harohas.length;i++){
+        for(let j=i+1;j<harohas.length;j++){
+            const a=harohas[i],b=harohas[j];
+            if(a.dataset.size===b.dataset.size && isOverlapping(a,b)){
+                const newSize=parseInt(a.dataset.size)+1;
+                const x=a.cx; const y=a.cy;
+                removeHaroha(a);
+                removeHaroha(b);
+                spawnHaroha(newSize,x,y);
+                return;
+            }
+        }
+    }
+}
+
+// ================= 겹침 판정 =================
+function isOverlapping(a,b){
+    return !(a.x+a.offsetWidth<b.x || a.x>b.x+b.offsetWidth || a.y+a.offsetHeight<b.y || a.y>b.y+b.offsetHeight);
+}
+
+// ================= 하로하 제거 =================
+function removeHaroha(h){
+    const idx=harohas.indexOf(h);
+    if(idx!==-1) harohas.splice(idx,1);
+    h.remove();
+}
+
+// ================= 리셋 =================
+function resetGame(){ while(harohas.length>0) harohas.pop().remove(); }
+
+// ================= 속도 조절 =================
+function speedUp(){ speedMultiplier=Math.min(speedMultiplier+0.5,MAX_SPEED); updateSpeedText(); }
+function speedDown(){ speedMultiplier=Math.max(speedMultiplier-0.5,MIN_SPEED); updateSpeedText(); }
+function updateSpeedText(){ speedText.innerText="속도: "+speedMultiplier.toFixed(1); }
+
+// ================= 게임 시작 =================
+update();
+</script>
+
+</body>
+</html>
+
+
+
+
